@@ -21,7 +21,9 @@
 #
 
 import os
+import json
 import argparse
+import requests
 import subprocess
 from collections import OrderedDict
 
@@ -162,3 +164,4 @@ class Vagrant(Shell):
             params = ['--'] + params
 
         return super().run(['vagrant'] + args + params, env, **kwargs)
+        

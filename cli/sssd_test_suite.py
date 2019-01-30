@@ -30,6 +30,7 @@ import datetime
 import textwrap
 
 from utils import *
+from vagrant_cloud import *
 
 class Command:
     def __init__(self, subparser, name, help):
@@ -462,6 +463,45 @@ class CreateBoxCommand(Command):
 
         with open(box.metapath, "w") as f:
             f.write(meta)
+            
+
+class VagrantCloudCommand(Command):
+    def __init__(self, subparser, name, help):
+        super().__init__(subparser, name, help)
+        
+        self.parser.add_argument(
+            '-t', '--token', action='store', type=str, dest='token',
+            help='Vagrant cloud authentication token'
+        )
+        
+        self.parser.add_argument(
+            '-u', '--username', action='store', type=str, dest='username',
+            help='Vagrant cloud username or organization name where boxes are stored'
+        )
+
+        
+class VagrantCloudListCommand(VagrantCloudCommand):
+    def __init__(self, subparser, name, help):
+        super().__init__(subparser, name, help)
+        
+    def run(self, args, params=[]):
+        cloud = VagrantCloud(self.dir, args.token, args.username)
+        boxes = cloud.list()
+        
+        for box in boxes:
+            print('- {:50s} ({})'.format(box.tag, box.version))
+
+
+class VagrantCloudUploadCommand(VagrantCloudCommand):
+    def __init__(self, subparser, name, help):
+        super().__init__(subparser, name, help)
+        
+    def run(self, args, params=[]):
+        cloud = VagrantCloud(self.dir, args.token, args.username)
+        cloud.boxCreate('test2', 'test box')
+        cloud.versionCreate('test2', '123', 'version desc')
+        cloud.providerCreate('test2', '123', 'libvirt')
+        cloud.versionRelease('test2', '123')
 
 
 def main():
@@ -515,6 +555,8 @@ def main():
     BasicVagrantCommand(subparser, 'update', 'Update vagrant box', command=['box', 'update'])
     PruneBoxCommand(subparser, 'prune', 'Delete outdated vagrant boxes')
     CreateBoxCommand(subparser, 'create-box', 'Create vagrant box')
+    VagrantCloudListCommand(subparser, 'cloud-list', 'List boxes stored in vagrant cloud')
+    VagrantCloudUploadCommand(subparser, 'cloud-upload', 'Upload boxes to vagrant cloud')
 
     # Parse argument and run given command
     args = parser.parse_args(args)
